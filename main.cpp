@@ -14,7 +14,16 @@
 #include "seriallib.h"
 #include <unistd.h>
 #include <stdio.h>
+#include  <cstdint>
 
+typedef struct {
+  uint16_t number1;   // 4 bytes
+  char randomPet[50]; // 50 bytes
+  float randomTemp;   // 4 bytes
+  char randomCity[50];// 50 bytes
+  char reserved[20];  // 20 bytes
+  // -----------------  128 bytes
+} RandomData;
 
 #if defined (_WIN32) || defined(_WIN64)
     //for serial ports above "COM9", we must use this extended syntax of "\\.\COMx".
@@ -40,24 +49,37 @@ int main( /*int argc, char *argv[]*/)
 
 
     // Connection to serial port
-    char errorOpening = serial.openDevice(SERIAL_PORT, 115200);
+    char errorOpening = serial.openDevice(SERIAL_PORT, 57600);
 
 
     // If connection fails, return the error code otherwise, display a success message
-    if (errorOpening!=1) return errorOpening;
+    if (errorOpening!=1) {
+    	printf("Error...");
+    	return errorOpening;	
+	}
     
 	printf ("Successful connection to %s\n",SERIAL_PORT);
 
 
     // Display ASCII characters (from 32 to 128)
-    for (int c=32;c<128;c++)
-    {
-    	printf("=");
-        serial.writeChar(c);
-        usleep(10000);
-    }
-    printf("\n");
-
+//    for (int c=32;c<128;c++)
+//    {
+//    	printf("=");
+//        serial.writeChar(c);
+//        usleep(10000);
+//    }
+//    printf("\n");
+	while (1) {
+		char c;
+		serial.readChar(&c);
+		if (c == 0x0d) {
+			printf("----- reading data ---- \n");
+			RandomData data;
+			serial.readBytes(&data, sizeof(RandomData));
+			printf("ID = %d, city = %s, pet = %s, temp = %f \n", data.number1, data.randomCity, data.randomPet, data.randomTemp);
+		}
+		usleep(500);
+	}
     // Close the serial device
     serial.closeDevice();
 
